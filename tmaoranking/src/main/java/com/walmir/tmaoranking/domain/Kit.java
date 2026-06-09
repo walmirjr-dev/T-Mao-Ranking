@@ -1,5 +1,6 @@
 package com.walmir.tmaoranking.domain;
 
+import com.walmir.tmaoranking.domain.enums.KitType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -35,4 +36,9 @@ public class Kit implements Serializable {
 
     @Column(name = "description")
     private String description;
+
+    @NotNull(message = "Kit type is required")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kit_type")
+    private KitType kitType;
 }
