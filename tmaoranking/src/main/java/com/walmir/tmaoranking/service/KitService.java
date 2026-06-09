@@ -27,4 +27,22 @@ public class KitService {
         return kitRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kit not found: " + id));
     }
+
+    public Kit update(Long id, Kit kit) {
+        Kit existing = findById(id);
+        existing.setReleaseYear(kit.getReleaseYear());
+        existing.setName(kit.getName());
+        existing.setKitType(kit.getKitType());
+        existing.setImgUrl(kit.getImgUrl());
+        existing.setDescription(kit.getDescription());
+        return kitRepository.save(existing);
+    }
+
+    public void delete(Long id) {
+        if (!kitRepository.existsById(id)) {
+            throw new RuntimeException("Kit not found in Id: " + id);
+        }
+
+        kitRepository.deleteById(id);
+    }
 }

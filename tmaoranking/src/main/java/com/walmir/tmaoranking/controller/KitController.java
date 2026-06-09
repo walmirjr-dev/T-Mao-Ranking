@@ -38,4 +38,15 @@ public class KitController {
     public ResponseEntity<Kit> findById(@PathVariable Long id) {
         return ResponseEntity.ok(kitService.findById(id));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Kit> update(@PathVariable Long id, @RequestBody Kit kit) {
+        return ResponseEntity.ok(kitService.update(id, kit));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        kitService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 }
