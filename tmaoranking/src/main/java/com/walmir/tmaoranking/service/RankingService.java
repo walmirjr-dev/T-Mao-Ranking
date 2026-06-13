@@ -1,12 +1,13 @@
 package com.walmir.tmaoranking.service;
 
-import com.walmir.tmaoranking.domain.Kit;
-import com.walmir.tmaoranking.domain.KitRanking;
-import com.walmir.tmaoranking.domain.KitRankingKey;
-import com.walmir.tmaoranking.domain.Ranking;
-import com.walmir.tmaoranking.repository.KitRankingRepository;
+import com.walmir.tmaoranking.domain.*;
+import com.walmir.tmaoranking.dto.request.KitRankingRequest;
+import com.walmir.tmaoranking.dto.request.RankingRequest;
+import com.walmir.tmaoranking.dto.response.RankingDetailResponse;
+import com.walmir.tmaoranking.dto.response.RankingSummaryResponse;
 import com.walmir.tmaoranking.repository.KitRepository;
 import com.walmir.tmaoranking.repository.RankingRepository;
+import com.walmir.tmaoranking.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -16,75 +17,108 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Transactional
 public class RankingService {
 
     private final RankingRepository rankingRepository;
+    private final UserRepository userRepository;
     private final KitRepository kitRepository;
-    private final KitRankingRepository kitRankingRepository;
 
-    public RankingService(RankingRepository rankingRepository, KitRepository kitRepository, KitRankingRepository kitRankingRepository) {
+    public RankingService(
+            RankingRepository rankingRepository,
+            UserRepository userRepository,
+            KitRepository kitRepository) {
+
         this.rankingRepository = rankingRepository;
+        this.userRepository = userRepository;
         this.kitRepository = kitRepository;
-        this.kitRankingRepository = kitRankingRepository;
     }
 
-    @Transactional
-    public Ranking insert(Ranking ranking) {
-        if (ranking.getKitRankings() == null) {
-            ranking.setKitRankings(new ArrayList<>());
-        }
+    public RankingSummaryResponse insert(RankingRequest request) {
+
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found: " + request.userId()));
+
+        Ranking ranking = new Ranking();
+
+        ranking.setTitle(request.title());
+        ranking.setRankingType(request.rankingType());
+        ranking.setUser(user);
         ranking.setCreatedAt(Instant.now());
+        ranking.setKitRankings(new ArrayList<>());
+
         validateRanking(ranking);
-        return rankingRepository.save(ranking);
+
+        return RankingSummaryResponse.from(
+                rankingRepository.save(ranking));
     }
 
-    public List<Ranking> findAll() {
-        return rankingRepository.findAll();
+    public List<RankingSummaryResponse> findAll() {
+
+        return rankingRepository.findAll()
+                .stream()
+                .map(RankingSummaryResponse::from)
+                .toList();
     }
 
-    public Ranking findById(Long id) {
-        return rankingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ranking not found: " + id));
+    public RankingDetailResponse findById(Long id) {
+
+        return RankingDetailResponse.from(getRanking(id));
     }
 
-    @Transactional
-    public Ranking update(Long id, Ranking ranking) {
-        Ranking existing = findById(id);
-        existing.setTitle(ranking.getTitle());
-        existing.setRankingType(ranking.getRankingType());
-        existing.setKitRankings(ranking.getKitRankings());
-        validateRanking(existing);
-        return rankingRepository.save(existing);
+    public RankingDetailResponse update(
+            Long id,
+            RankingRequest request) {
+
+        Ranking ranking = getRanking(id);
+
+        ranking.setTitle(request.title());
+        ranking.setRankingType(request.rankingType());
+
+        validateRanking(ranking);
+
+        return RankingDetailResponse.from(
+                rankingRepository.save(ranking));
     }
 
-    @Transactional
     public void delete(Long id) {
-        if (!rankingRepository.existsById(id)) {
-            throw new RuntimeException("Ranking not found: " + id);
-        }
+
+        Ranking ranking = getRanking(id);
+
         try {
-            rankingRepository.deleteById(id);
+            rankingRepository.delete(ranking);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("Database integrity violation: " + e.getMessage());
+            throw new RuntimeException(
+                    "Database integrity violation: "
+                            + e.getMessage());
         }
     }
 
+    public RankingDetailResponse addKit(
+            Long rankingId,
+            KitRankingRequest request) {
 
-    @Transactional
-    public Ranking addKit(Long rankingId, Long kitId, Integer position) {
+        Ranking ranking = getRanking(rankingId);
 
-        Ranking ranking = findById(rankingId);
+        Kit kit = kitRepository.findById(request.kitId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Kit not found: "
+                                        + request.kitId()));
 
-        Kit kit = kitRepository.findById(kitId)
-                .orElseThrow(() -> new RuntimeException("Kit not found"));
-
-        KitRankingKey key = new KitRankingKey(rankingId, kitId);
+        KitRankingKey key =
+                new KitRankingKey(
+                        rankingId,
+                        request.kitId());
 
         KitRanking kitRanking = new KitRanking();
+
         kitRanking.setId(key);
         kitRanking.setRanking(ranking);
         kitRanking.setKit(kit);
-        kitRanking.setPosition(position);
+        kitRanking.setPosition(request.position());
 
         ranking.getKitRankings().add(kitRanking);
 
@@ -92,14 +126,32 @@ public class RankingService {
 
         rankingRepository.save(ranking);
 
-        return ranking;
+        return RankingDetailResponse.from(ranking);
     }
 
-    @Transactional
-    public void removeKit(Long rankingId, Long kitId) {
-        Ranking ranking = findById(rankingId);
-        ranking.getKitRankings().removeIf(kr -> kr.getKit().getId().equals(kitId));
+    public RankingDetailResponse removeKit(
+            Long rankingId,
+            Long kitId) {
+
+        Ranking ranking = getRanking(rankingId);
+
+        ranking.getKitRankings()
+                .removeIf(
+                        kr -> kr.getKit()
+                                .getId()
+                                .equals(kitId));
+
         rankingRepository.save(ranking);
+
+        return RankingDetailResponse.from(ranking);
+    }
+
+    private Ranking getRanking(Long id) {
+
+        return rankingRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Ranking not found: " + id));
     }
 
     private void validateRanking(Ranking ranking) {
@@ -109,32 +161,46 @@ public class RankingService {
     }
 
     private void validateSize(Ranking ranking) {
+
         int max = ranking.getRankingType().getMaxSize();
+
         if (ranking.getKitRankings().size() > max) {
-            throw new RuntimeException("Ranking exceeded max size: " + max);
+            throw new RuntimeException(
+                    "Ranking exceeded max size: " + max);
         }
     }
 
     private void validateDuplicatePositions(Ranking ranking) {
+
         List<Integer> positions = new ArrayList<>();
+
         for (KitRanking kr : ranking.getKitRankings()) {
+
             if (positions.contains(kr.getPosition())) {
-                throw new RuntimeException("Duplicate position in ranking: " + kr.getPosition());
+                throw new RuntimeException(
+                        "Duplicate position in ranking: "
+                                + kr.getPosition());
             }
+
             positions.add(kr.getPosition());
         }
     }
 
     private void validateDuplicateKits(Ranking ranking) {
+
         List<Long> kitIds = new ArrayList<>();
+
         for (KitRanking kr : ranking.getKitRankings()) {
+
             Long kitId = kr.getKit().getId();
+
             if (kitIds.contains(kitId)) {
-                throw new RuntimeException("Duplicate kit in ranking: " + kitId);
+                throw new RuntimeException(
+                        "Duplicate kit in ranking: "
+                                + kitId);
             }
+
             kitIds.add(kitId);
         }
     }
-
-    
 }

@@ -1,6 +1,8 @@
 package com.walmir.tmaoranking.controller;
 
 import com.walmir.tmaoranking.domain.User;
+import com.walmir.tmaoranking.dto.request.UserRequest;
+import com.walmir.tmaoranking.dto.response.UserResponse;
 import com.walmir.tmaoranking.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,30 +22,28 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> insert(@RequestBody User user) {
-        User saved = userService.insert(user);
+    public ResponseEntity<UserResponse> insert(@RequestBody UserRequest request) {
+        UserResponse saved = userService.insert(request);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(saved.getId())
+                .buildAndExpand(saved.id())
                 .toUri();
         return ResponseEntity.created(uri).body(saved);
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> findAll() {
-        return userService.findAll().isEmpty()
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<List<UserResponse>> findAll() {
+        return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> findById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.update(id, user));
+    public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody UserRequest request) {
+        return ResponseEntity.ok(userService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

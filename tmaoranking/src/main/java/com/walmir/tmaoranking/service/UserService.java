@@ -1,6 +1,8 @@
 package com.walmir.tmaoranking.service;
 
 import com.walmir.tmaoranking.domain.User;
+import com.walmir.tmaoranking.dto.request.UserRequest;
+import com.walmir.tmaoranking.dto.response.UserResponse;
 import com.walmir.tmaoranking.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -16,25 +18,32 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public User insert(User user) {
-        return userRepository.save(user);
+    public UserResponse insert(UserRequest request) {
+        User user = new User();
+        user.setName(request.name());
+        user.setEmail(request.email());
+        user.setPassword(request.password());
+        return UserResponse.from(userRepository.save(user));
     }
 
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public List<UserResponse> findAll() {
+        return userRepository.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
     }
 
-    public User findById(Long id) {
-        return userRepository.findById(id)
+    public UserResponse findById(Long id) {
+        return UserResponse.from(userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found: " + id)));
+    }
+
+    public UserResponse update(Long id, UserRequest request) {
+        User existing = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found: " + id));
-    }
-
-    public User update(Long id, User user) {
-        User existing = findById(id);
-        existing.setName(user.getName());
-        existing.setEmail(user.getEmail());
-        existing.setPassword(user.getPassword());
-        return userRepository.save(existing);
+        existing.setName(request.name());
+        existing.setEmail(request.email());
+        existing.setPassword(request.password());
+        return UserResponse.from(userRepository.save(existing));
     }
 
     public void delete(Long id) {

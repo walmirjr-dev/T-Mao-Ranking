@@ -1,6 +1,8 @@
 package com.walmir.tmaoranking.controller;
 
 import com.walmir.tmaoranking.domain.Kit;
+import com.walmir.tmaoranking.dto.request.KitRequest;
+import com.walmir.tmaoranking.dto.response.KitResponse;
 import com.walmir.tmaoranking.service.KitService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,28 +22,28 @@ public class KitController {
     }
 
     @PostMapping
-    public ResponseEntity<Kit> insert(@RequestBody Kit kit) {
-        Kit saved = kitService.insert(kit);
+    public ResponseEntity<KitResponse> insert(@RequestBody KitRequest request) {
+        KitResponse saved = kitService.insert(request);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(saved.getId())
+                .buildAndExpand(saved.id())
                 .toUri();
         return ResponseEntity.created(uri).body(saved);
     }
 
     @GetMapping
-    public ResponseEntity<List<Kit>> findAll() {
+    public ResponseEntity<List<KitResponse>> findAll() {
         return ResponseEntity.ok(kitService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Kit> findById(@PathVariable Long id) {
+    public ResponseEntity<KitResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(kitService.findById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Kit> update(@PathVariable Long id, @RequestBody Kit kit) {
-        return ResponseEntity.ok(kitService.update(id, kit));
+    public ResponseEntity<KitResponse> update(@PathVariable Long id, @RequestBody KitRequest request) {
+        return ResponseEntity.ok(kitService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

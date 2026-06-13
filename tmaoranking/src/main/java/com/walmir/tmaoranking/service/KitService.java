@@ -2,6 +2,8 @@ package com.walmir.tmaoranking.service;
 
 import com.walmir.tmaoranking.domain.Kit;
 import com.walmir.tmaoranking.domain.enums.KitType;
+import com.walmir.tmaoranking.dto.request.KitRequest;
+import com.walmir.tmaoranking.dto.response.KitResponse;
 import com.walmir.tmaoranking.repository.KitRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,28 +18,37 @@ public class KitService {
         this.kitRepository = kitRepository;
     }
 
-    public Kit insert(Kit kit) {
+    public KitResponse insert(KitRequest request) {
+        Kit kit = new Kit();
+        kit.setReleaseYear(request.releaseYear());
+        kit.setName(request.name());
+        kit.setKitType(request.kitType());
+        kit.setImgUrl(request.imgUrl());
+        kit.setDescription(request.description());
         validateDuplicate(kit);
-        return kitRepository.save(kit);
+        return KitResponse.from(kitRepository.save(kit));
     }
 
-    public List<Kit> findAll() {
-        return kitRepository.findAll();
+    public List<KitResponse> findAll() {
+        return kitRepository.findAll().stream()
+                .map(KitResponse::from)
+                .toList();
     }
 
-    public Kit findById(Long id) {
-        return kitRepository.findById(id)
+    public KitResponse findById(Long id) {
+        return KitResponse.from(kitRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Kit not found: " + id)));
+    }
+
+    public KitResponse update(Long id, KitRequest request) {
+        Kit existing = kitRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kit not found: " + id));
-    }
-
-    public Kit update(Long id, Kit kit) {
-        Kit existing = findById(id);
-        existing.setReleaseYear(kit.getReleaseYear());
-        existing.setName(kit.getName());
-        existing.setKitType(kit.getKitType());
-        existing.setImgUrl(kit.getImgUrl());
-        existing.setDescription(kit.getDescription());
-        return kitRepository.save(existing);
+        existing.setReleaseYear(request.releaseYear());
+        existing.setName(request.name());
+        existing.setKitType(request.kitType());
+        existing.setImgUrl(request.imgUrl());
+        existing.setDescription(request.description());
+        return KitResponse.from(kitRepository.save(existing));
     }
 
     public void delete(Long id) {
