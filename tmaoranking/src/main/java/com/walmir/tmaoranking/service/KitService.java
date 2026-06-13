@@ -4,6 +4,8 @@ import com.walmir.tmaoranking.domain.Kit;
 import com.walmir.tmaoranking.domain.enums.KitType;
 import com.walmir.tmaoranking.dto.request.KitRequest;
 import com.walmir.tmaoranking.dto.response.KitResponse;
+import com.walmir.tmaoranking.exception.BusinessException;
+import com.walmir.tmaoranking.exception.ResourceNotFoundException;
 import com.walmir.tmaoranking.repository.KitRepository;
 import org.springframework.stereotype.Service;
 
@@ -37,12 +39,12 @@ public class KitService {
 
     public KitResponse findById(Long id) {
         return KitResponse.from(kitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Kit not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException(id)));
     }
 
     public KitResponse update(Long id, KitRequest request) {
         Kit existing = kitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Kit not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(id));
         existing.setReleaseYear(request.releaseYear());
         existing.setName(request.name());
         existing.setKitType(request.kitType());
@@ -53,7 +55,7 @@ public class KitService {
 
     public void delete(Long id) {
         if (!kitRepository.existsById(id)) {
-            throw new RuntimeException("Kit not found in Id: " + id);
+            throw new ResourceNotFoundException(id);
         }
 
         kitRepository.deleteById(id);
@@ -85,10 +87,10 @@ public class KitService {
 
     private void validateDuplicate(Kit kit) {
         if (kit.getKitType() != KitType.SPECIAL && kitRepository.existsByKitTypeAndReleaseYear(kit.getKitType(), kit.getReleaseYear())) {
-            throw new RuntimeException("A " + kit.getKitType() + " kit already exists for year " + kit.getReleaseYear());
+            throw new BusinessException("A " + kit.getKitType() + " kit already exists for year " + kit.getReleaseYear());
         }
         if (kit.getKitType() == KitType.SPECIAL && kitRepository.existsByNameAndKitTypeAndReleaseYear(kit.getName(), kit.getKitType(), kit.getReleaseYear())) {
-            throw new RuntimeException("This special kit already exists for year " + kit.getReleaseYear());
+            throw new BusinessException("This special kit already exists for year " + kit.getReleaseYear());
         }
     }
 }

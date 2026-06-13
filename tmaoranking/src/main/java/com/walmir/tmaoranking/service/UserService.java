@@ -3,6 +3,8 @@ package com.walmir.tmaoranking.service;
 import com.walmir.tmaoranking.domain.User;
 import com.walmir.tmaoranking.dto.request.UserRequest;
 import com.walmir.tmaoranking.dto.response.UserResponse;
+import com.walmir.tmaoranking.exception.DatabaseException;
+import com.walmir.tmaoranking.exception.ResourceNotFoundException;
 import com.walmir.tmaoranking.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -34,12 +36,12 @@ public class UserService {
 
     public UserResponse findById(Long id) {
         return UserResponse.from(userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException(id)));
     }
 
     public UserResponse update(Long id, UserRequest request) {
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(id));
         existing.setName(request.name());
         existing.setEmail(request.email());
         existing.setPassword(request.password());
@@ -48,12 +50,12 @@ public class UserService {
 
     public void delete(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found: " + id);
+            throw new ResourceNotFoundException(id);
         }
         try {
             userRepository.deleteById(id);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("Database integrity violation: " + e.getMessage());
+            throw new DatabaseException("Database integrity violation: " + e.getMessage());
         }
     }
 }

@@ -5,6 +5,9 @@ import com.walmir.tmaoranking.dto.request.KitRankingRequest;
 import com.walmir.tmaoranking.dto.request.RankingRequest;
 import com.walmir.tmaoranking.dto.response.RankingDetailResponse;
 import com.walmir.tmaoranking.dto.response.RankingSummaryResponse;
+import com.walmir.tmaoranking.exception.BusinessException;
+import com.walmir.tmaoranking.exception.DatabaseException;
+import com.walmir.tmaoranking.exception.ResourceNotFoundException;
 import com.walmir.tmaoranking.repository.KitRepository;
 import com.walmir.tmaoranking.repository.RankingRepository;
 import com.walmir.tmaoranking.repository.UserRepository;
@@ -38,8 +41,7 @@ public class RankingService {
 
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found: " + request.userId()));
+                        new ResourceNotFoundException(request.userId()));
 
         Ranking ranking = new Ranking();
 
@@ -84,15 +86,13 @@ public class RankingService {
     }
 
     public void delete(Long id) {
-
-        Ranking ranking = getRanking(id);
-
+        if (!rankingRepository.existsById(id)) {
+            throw new ResourceNotFoundException(id);
+        }
         try {
-            rankingRepository.delete(ranking);
+            rankingRepository.deleteById(id);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException(
-                    "Database integrity violation: "
-                            + e.getMessage());
+            throw new DatabaseException(e.getMessage());
         }
     }
 
@@ -104,9 +104,7 @@ public class RankingService {
 
         Kit kit = kitRepository.findById(request.kitId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Kit not found: "
-                                        + request.kitId()));
+                        new ResourceNotFoundException(request.kitId()));
 
         KitRankingKey key =
                 new KitRankingKey(
@@ -150,8 +148,7 @@ public class RankingService {
 
         return rankingRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Ranking not found: " + id));
+                        new ResourceNotFoundException(id));
     }
 
     private void validateRanking(Ranking ranking) {
@@ -165,7 +162,7 @@ public class RankingService {
         int max = ranking.getRankingType().getMaxSize();
 
         if (ranking.getKitRankings().size() > max) {
-            throw new RuntimeException(
+            throw new BusinessException(
                     "Ranking exceeded max size: " + max);
         }
     }
@@ -177,7 +174,7 @@ public class RankingService {
         for (KitRanking kr : ranking.getKitRankings()) {
 
             if (positions.contains(kr.getPosition())) {
-                throw new RuntimeException(
+                throw new BusinessException(
                         "Duplicate position in ranking: "
                                 + kr.getPosition());
             }
@@ -195,7 +192,7 @@ public class RankingService {
             Long kitId = kr.getKit().getId();
 
             if (kitIds.contains(kitId)) {
-                throw new RuntimeException(
+                throw new BusinessException(
                         "Duplicate kit in ranking: "
                                 + kitId);
             }
