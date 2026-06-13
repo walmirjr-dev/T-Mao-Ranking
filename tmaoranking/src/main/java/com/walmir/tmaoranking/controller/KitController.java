@@ -1,6 +1,7 @@
 package com.walmir.tmaoranking.controller;
 
 import com.walmir.tmaoranking.domain.Kit;
+import com.walmir.tmaoranking.domain.enums.KitType;
 import com.walmir.tmaoranking.dto.request.KitRequest;
 import com.walmir.tmaoranking.dto.response.KitResponse;
 import com.walmir.tmaoranking.service.KitService;
@@ -50,5 +51,27 @@ public class KitController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         kitService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search/year/{year}")
+    public ResponseEntity<List<KitResponse>> findByYear(@PathVariable Integer year) {
+        return ResponseEntity.ok(kitService.findByYear(year));
+    }
+
+    @GetMapping("/search/year")
+    public ResponseEntity<List<KitResponse>> findByYearBetween(
+            @RequestParam Integer startYear,
+            @RequestParam Integer endYear) {
+        return ResponseEntity.ok(kitService.findByYearBetween(startYear, endYear));
+    }
+
+    @GetMapping("/search/type/{kitType}")
+    public ResponseEntity<List<KitResponse>> findByKitType(@PathVariable KitType kitType) {
+        return ResponseEntity.ok(kitService.findByKitType(kitType));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<KitResponse>> findByName(@RequestParam String name) {
+        return ResponseEntity.ok(kitService.findByName(name));
     }
 }

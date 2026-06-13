@@ -59,6 +59,30 @@ public class KitService {
         kitRepository.deleteById(id);
     }
 
+    public List<KitResponse> findByYear(Integer year) {
+        return kitRepository.findByReleaseYear(year).stream()
+                .map(KitResponse::from)
+                .toList();
+    }
+
+    public List<KitResponse> findByYearBetween(Integer startYear, Integer endYear) {
+        return kitRepository.findByReleaseYearBetween(startYear, endYear).stream()
+                .map(KitResponse::from)
+                .toList();
+    }
+
+    public List<KitResponse> findByKitType(KitType kitType) {
+        return kitRepository.findByKitType(kitType).stream()
+                .map(KitResponse::from)
+                .toList();
+    }
+
+    public List<KitResponse> findByName(String name) {
+        return kitRepository.findByNameContainingIgnoreCase(name).stream()
+                .map(KitResponse::from)
+                .toList();
+    }
+
     private void validateDuplicate(Kit kit) {
         if (kit.getKitType() != KitType.SPECIAL && kitRepository.existsByKitTypeAndReleaseYear(kit.getKitType(), kit.getReleaseYear())) {
             throw new RuntimeException("A " + kit.getKitType() + " kit already exists for year " + kit.getReleaseYear());
