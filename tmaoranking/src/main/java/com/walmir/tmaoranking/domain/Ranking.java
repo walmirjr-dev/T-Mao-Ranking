@@ -3,10 +3,7 @@ package com.walmir.tmaoranking.domain;
 import com.walmir.tmaoranking.domain.enums.RankingType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -43,7 +40,7 @@ public class Ranking implements Serializable {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "ranking")
+    @OneToMany(mappedBy = "ranking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<KitRanking> kitRankings = new ArrayList<>();
 
 

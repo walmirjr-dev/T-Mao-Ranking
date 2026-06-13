@@ -1,5 +1,6 @@
 package com.walmir.tmaoranking.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +22,7 @@ public class KitRanking implements Serializable {
     @ManyToOne
     @MapsId("rankingId")
     @JoinColumn(name = "ranking_id")
+    @JsonIgnore
     private Ranking ranking;
 
     @ManyToOne
