@@ -7,6 +7,7 @@ import com.walmir.tmaoranking.exception.DatabaseException;
 import com.walmir.tmaoranking.exception.ResourceNotFoundException;
 import com.walmir.tmaoranking.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,19 +16,20 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UserResponse insert(UserRequest request) {
         User user = new User();
         user.setName(request.name());
         user.setEmail(request.email());
-        user.setPassword(request.password());
+        user.setPassword(passwordEncoder.encode(request.password()));
         return UserResponse.from(userRepository.save(user));
     }
-
     public List<UserResponse> findAll() {
         return userRepository.findAll().stream()
                 .map(UserResponse::from)
@@ -44,7 +46,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException(id));
         existing.setName(request.name());
         existing.setEmail(request.email());
-        existing.setPassword(request.password());
+        existing.setPassword(passwordEncoder.encode(request.password()));
         return UserResponse.from(userRepository.save(existing));
     }
 
