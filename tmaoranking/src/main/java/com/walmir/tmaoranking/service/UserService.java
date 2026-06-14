@@ -1,6 +1,7 @@
 package com.walmir.tmaoranking.service;
 
 import com.walmir.tmaoranking.domain.User;
+import com.walmir.tmaoranking.domain.enums.Role;
 import com.walmir.tmaoranking.dto.request.UserRequest;
 import com.walmir.tmaoranking.dto.response.UserResponse;
 import com.walmir.tmaoranking.exception.DatabaseException;
@@ -31,6 +32,7 @@ public class UserService {
         user.setName(request.name());
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole(Role.USER);
         return UserResponse.from(userRepository.save(user));
     }
     public List<UserResponse> findAll() {
