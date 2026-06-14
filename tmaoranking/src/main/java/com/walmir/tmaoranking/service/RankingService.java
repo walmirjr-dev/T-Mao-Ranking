@@ -10,7 +10,7 @@ import com.walmir.tmaoranking.exception.DatabaseException;
 import com.walmir.tmaoranking.exception.ResourceNotFoundException;
 import com.walmir.tmaoranking.repository.KitRepository;
 import com.walmir.tmaoranking.repository.RankingRepository;
-import com.walmir.tmaoranking.repository.UserRepository;
+import com.walmir.tmaoranking.security.AuthenticatedUserService;
 import jakarta.transaction.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,71 +24,62 @@ import java.util.List;
 public class RankingService {
 
     private final RankingRepository rankingRepository;
-    private final UserRepository userRepository;
     private final KitRepository kitRepository;
+    private final AuthenticatedUserService authService;
 
     public RankingService(
             RankingRepository rankingRepository,
-            UserRepository userRepository,
-            KitRepository kitRepository) {
-
+            KitRepository kitRepository,
+            AuthenticatedUserService authService) {
         this.rankingRepository = rankingRepository;
-        this.userRepository = userRepository;
         this.kitRepository = kitRepository;
+        this.authService = authService;
     }
 
     public RankingSummaryResponse insert(RankingRequest request) {
-
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(request.userId()));
+        User loggedUser = authService.getLoggedUser();
 
         Ranking ranking = new Ranking();
-
         ranking.setTitle(request.title());
         ranking.setRankingType(request.rankingType());
-        ranking.setUser(user);
+        ranking.setUser(loggedUser);
         ranking.setCreatedAt(Instant.now());
         ranking.setKitRankings(new ArrayList<>());
 
         validateRanking(ranking);
 
-        return RankingSummaryResponse.from(
-                rankingRepository.save(ranking));
+        return RankingSummaryResponse.from(rankingRepository.save(ranking));
     }
 
     public List<RankingSummaryResponse> findAll() {
-
-        return rankingRepository.findAll()
+        User loggedUser = authService.getLoggedUser();
+        return rankingRepository.findByUserId(loggedUser.getId())
                 .stream()
                 .map(RankingSummaryResponse::from)
                 .toList();
     }
 
     public RankingDetailResponse findById(Long id) {
-
-        return RankingDetailResponse.from(getRanking(id));
+        Ranking ranking = getRanking(id);
+        authService.checkOwnership(ranking.getUser().getId());
+        return RankingDetailResponse.from(ranking);
     }
 
-    public RankingDetailResponse update(
-            Long id,
-            RankingRequest request) {
-
+    public RankingDetailResponse update(Long id, RankingRequest request) {
         Ranking ranking = getRanking(id);
+        authService.checkOwnership(ranking.getUser().getId());
 
         ranking.setTitle(request.title());
         ranking.setRankingType(request.rankingType());
 
         validateRanking(ranking);
 
-        return RankingDetailResponse.from(
-                rankingRepository.save(ranking));
+        return RankingDetailResponse.from(rankingRepository.save(ranking));
     }
 
     public void delete(Long id) {
-        if (!rankingRepository.existsById(id)) {
-            throw new ResourceNotFoundException(id);
-        }
+        Ranking ranking = getRanking(id);
+        authService.checkOwnership(ranking.getUser().getId());
         try {
             rankingRepository.deleteById(id);
         } catch (DataIntegrityViolationException e) {
@@ -96,59 +87,40 @@ public class RankingService {
         }
     }
 
-    public RankingDetailResponse addKit(
-            Long rankingId,
-            KitRankingRequest request) {
-
+    public RankingDetailResponse addKit(Long rankingId, KitRankingRequest request) {
         Ranking ranking = getRanking(rankingId);
+        authService.checkOwnership(ranking.getUser().getId());
 
         Kit kit = kitRepository.findById(request.kitId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(request.kitId()));
+                .orElseThrow(() -> new ResourceNotFoundException(request.kitId()));
 
-        KitRankingKey key =
-                new KitRankingKey(
-                        rankingId,
-                        request.kitId());
-
+        KitRankingKey key = new KitRankingKey(rankingId, request.kitId());
         KitRanking kitRanking = new KitRanking();
-
         kitRanking.setId(key);
         kitRanking.setRanking(ranking);
         kitRanking.setKit(kit);
         kitRanking.setPosition(request.position());
 
         ranking.getKitRankings().add(kitRanking);
-
         validateRanking(ranking);
-
         rankingRepository.save(ranking);
 
         return RankingDetailResponse.from(ranking);
     }
 
-    public RankingDetailResponse removeKit(
-            Long rankingId,
-            Long kitId) {
-
+    public RankingDetailResponse removeKit(Long rankingId, Long kitId) {
         Ranking ranking = getRanking(rankingId);
+        authService.checkOwnership(ranking.getUser().getId());
 
-        ranking.getKitRankings()
-                .removeIf(
-                        kr -> kr.getKit()
-                                .getId()
-                                .equals(kitId));
-
+        ranking.getKitRankings().removeIf(kr -> kr.getKit().getId().equals(kitId));
         rankingRepository.save(ranking);
 
         return RankingDetailResponse.from(ranking);
     }
 
     private Ranking getRanking(Long id) {
-
         return rankingRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(id));
+                .orElseThrow(() -> new ResourceNotFoundException(id));
     }
 
     private void validateRanking(Ranking ranking) {
