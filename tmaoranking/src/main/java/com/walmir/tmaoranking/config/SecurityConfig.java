@@ -64,7 +64,7 @@ public class SecurityConfig {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
 
         // Libera explicitamente a porta do seu front-end Vite
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "https://t-mao-ranking-fe.onrender.com"));
 
         // Libera os métodos HTTP que seu app vai usar
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
