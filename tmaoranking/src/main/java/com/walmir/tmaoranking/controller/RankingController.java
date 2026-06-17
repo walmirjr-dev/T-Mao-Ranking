@@ -7,6 +7,9 @@ import com.walmir.tmaoranking.dto.request.RankingRequest;
 import com.walmir.tmaoranking.dto.response.RankingDetailResponse;
 import com.walmir.tmaoranking.dto.response.RankingSummaryResponse;
 import com.walmir.tmaoranking.service.RankingService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -92,4 +95,12 @@ public class RankingController {
         return ResponseEntity.ok(
                 rankingService.removeKit(id, kitId));
     }
+
+    @PatchMapping("/{id}/title")
+    ResponseEntity<Void> updateTitle(@PathVariable Long id, @RequestBody @Valid UpdateTitleDto dto) {
+        rankingService.updateRankingTitle(id, dto.title());
+        return ResponseEntity.noContent().build();
+    }
+
+    private record UpdateTitleDto(@NotBlank @Size(min = 3, max = 50) String title) {}
 }

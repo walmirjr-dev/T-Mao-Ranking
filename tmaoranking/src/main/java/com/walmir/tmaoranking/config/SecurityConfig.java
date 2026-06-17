@@ -67,7 +67,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "https://t-mao-ranking-fe.onrender.com"));
 
         // Libera os métodos HTTP que seu app vai usar
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
         // Libera os cabeçalhos (incluindo o 'Authorization' que carrega o Token JWT)
         configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Cache-Control"));

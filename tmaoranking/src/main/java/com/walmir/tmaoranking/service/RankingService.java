@@ -130,7 +130,6 @@ public class RankingService {
     }
 
     private void validateSize(Ranking ranking) {
-
         int max = ranking.getRankingType().getMaxSize();
 
         if (ranking.getKitRankings().size() > max) {
@@ -140,7 +139,6 @@ public class RankingService {
     }
 
     private void validateDuplicatePositions(Ranking ranking) {
-
         List<Integer> positions = new ArrayList<>();
 
         for (KitRanking kr : ranking.getKitRankings()) {
@@ -156,7 +154,6 @@ public class RankingService {
     }
 
     private void validateDuplicateKits(Ranking ranking) {
-
         List<Long> kitIds = new ArrayList<>();
 
         for (KitRanking kr : ranking.getKitRankings()) {
@@ -171,5 +168,15 @@ public class RankingService {
 
             kitIds.add(kitId);
         }
+    }
+
+    @Transactional
+    public RankingDetailResponse updateRankingTitle(Long id, String newTitle) {
+        Ranking ranking = getRanking(id);
+
+        ranking.setTitle(newTitle);
+        rankingRepository.save(ranking);
+
+        return RankingDetailResponse.from(ranking);
     }
 }
